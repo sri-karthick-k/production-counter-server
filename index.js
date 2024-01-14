@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken')
 
 const secretKey = process.env.AUTH_KEY;
 
+let port = "4000";
+
 app.use(cors())
 app.use(express.json())
 
@@ -95,7 +97,7 @@ app.post("/api/add-tenant-user", async (req, res) => {
 
 app.post("/api/add-device", async(req, res)=>{
     try {
-        const { device_id, lat, longi, descr, uid } = req.body;  
+        const { device_id, lat, longi, name, uid } = req.body;  
         const result = await pool.query("SELECT device_id FROM device WHERE device_id=($1)", [device_id])
         if (result.rowCount == 0) {
 
@@ -103,7 +105,7 @@ app.post("/api/add-device", async(req, res)=>{
 
             if (isValidUserId.rowCount > 0) {
                 //     Insert Statement Device parameters 
-                await pool.query("INSERT INTO device(device_id, LOGITUDE,LATITUDE,DESCRIPTION) VALUES ($1, $2, $3, $4)", [device_id, lat, longi, descr]);
+                await pool.query("INSERT INTO device(device_id, LOGITUDE,LATITUDE,name) VALUES ($1, $2, $3, $4)", [device_id, lat, longi, name]);
                 await pool.query("INSERT INTO device_management(uid, device_id, access) VALUES ($1, $2, $3)", [uid, device_id, 'true'])
                 return res.status(200).json({ result: "Success" });
             } else {
@@ -118,6 +120,7 @@ app.post("/api/add-device", async(req, res)=>{
     }
 })
 
+// Not required for now
 app.post("/api/device-management", async(req, res) => {
     try {
         const {uid, device_id, access} = req.body;
@@ -133,49 +136,6 @@ app.post("/api/device-management", async(req, res) => {
     }
 })
 
-app.post("/api/add-sensor-parameter", async(req, res)=>{
-    try {
-        const { device_id, key, minValue, maxValue, siunit, uid } = req.body;
-        // Should add company, date_of_register
-        // fetch access along with the device_id and check for true or false value
-        const result = await pool.query("SELECT device_id FROM device_management WHERE device_id=($1)", [device_id])
-        if (result.rowCount > 0) {
-            const isValidUserId = await pool.query("SELECT uid FROM user_details WHERE uid=($1)", [uid])
-
-            if (isValidUserId.rowCount > 0) {
-                //     Insert Statement Sensor parameters only if both user and device_id is valid
-                await pool.query("INSERT INTO sensor_parameters(device_id, key, minValue, maxValue, siunit) VALUES ($1, $2, $3, $4, $5)", [device_id, key, minValue, maxValue, siunit]);
-
-                return res.status(200).json({ result: "Success" });
-            } else {
-                return res.status(300).json({ invalidUserId: "UserID not Present...Record Not Inserted" });
-            }
-        } else {
-            return res.status(404).json({ emailExist: "Device Does not exists!!" });
-        }
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-})
-
-app.post("/api/add-sensor-value", async(req, res)=>{
-    try {
-        const { sensor_id, value, u_time=null } = req.body;
-        // Should add company, date_of_register
-        // fetch access along with the device_id and check for true or false value
-        const result = await pool.query("SELECT sensor_id FROM sensor_parameters WHERE sensor_id=($1)", [sensor_id])
-        if (result.rowCount > 0) {
-                //     Insert Statement Sensor parameters only if both user and device_id is valid
-                await pool.query("INSERT INTO sensor_value(sensor_id, value, u_time) VALUES ($1, $2, $3)", [ sensor_id, value, u_time ]);
-
-                return res.status(200).json({ result: "Success" });
-        } else {
-            return res.status(404).json({ emailExist: "Sensor parameter does not exist!!" });
-        }
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-})
 
 app.get("/api/get-devices", async(req, res)=>{
     try {
@@ -204,53 +164,25 @@ app.get("/api/get-devices", async(req, res)=>{
     }
 })
 
-// Ignore this
-app.get("/api/get-sensor-params", async(req, res) => {
+app.get("/api/get-sensor-value", async (req, res) => {
     try {
-        // const user_id = req.header("user_id")
-        const device_id = req.header("device_id")
-        const decodedDeviceId = decodeURIComponent(device_id)
-        console.log(decodedDeviceId);
-        const sensor_params = await pool.query("SELECT * FROM sensor_parameters where device_id=($1);", [decodedDeviceId])
+        const device_id = decodeURIComponent(req.header("device_id"));
+        const device_value = await pool.query("SELECT * FROM DEVICE_VALUES WHERE mac_address = $1 ORDER BY id DESC LIMIT 1;", [device_id]);
 
-        
-        return res.status(200).json(sensor_params.rows)
-    } catch (err) {
-        return res.status(500).json({error: err.message})
-    }
-})
-
-// not working
-app.get("/api/get-sensor-value-notworking", async(req, res) => {
-    try {
-        const sensor_id = req.header("sensor_id")
-        const sensor_value = await pool.query("select * from sensor_value where sensor_id = $1 order by id desc limit 1;", [sensor_id])
-        console.log(sensor_value.rows[0].value);
-        return res.status(200).json(sensor_value.rows)
-    } catch (err) {
-        return res.status(500).json({error: err.message})
-    }
-})
-
-app.get("/api/get-sensor-value", async(req, res) => {
-    try {
-        const device_id = decodeURIComponent(req.header("device_id"))
-        const sensor_params = await pool.query("SELECT * FROM sensor_parameters where device_id=($1);", [device_id])
-        
-        for(let i=0; i<sensor_params.rowCount; i++){
-            const sensor_value = await pool.query("select * from sensor_value where sensor_id = $1 order by id desc limit 1;", [sensor_params.rows[i].sensor_id])
-            sensor_params.rows[i].value = sensor_value.rows[0].value;
-            sensor_params.rows[i].u_time = sensor_value.rows[0].u_time;
+        // Check if any rows were returned
+        if (device_value.rows.length > 0) {
+            // Send the first row as the response
+            return res.status(200).json({ device_id: device_value.rows[0] });
+        } else {
+            return res.status(404).json({ error: "No device values found" });
         }
-
-        console.log(sensor_params.rows[1].sensor_id);
-
-        return res.status(200).json(sensor_params.rows)
     } catch (err) {
-        return res.status(500).json({error: err.message})
+        return res.status(500).json({ error: err.message });
     }
-})
+});
 
+
+// Not required for now
 app.get("/api/get-tenant-user", async(req, res) => {
     try {
         const uid = req.header("uid")
@@ -273,6 +205,7 @@ app.get("/api/get-tenant-user", async(req, res) => {
     }
 })
 
+// Not required for now
 app.get("/api/get-user", async(req, res) => {
     try {
         const uid = req.header("uid")
@@ -283,6 +216,6 @@ app.get("/api/get-user", async(req, res) => {
     }
 })
 
-app.listen("4001", () => {
-    console.log("Server running at 4001")
+app.listen(port, () => {
+    console.log(`Server running at ${port}`)
 })
