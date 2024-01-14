@@ -5,6 +5,7 @@ CREATE TABLE user_details (uid SERIAL PRIMARY KEY, name VARCHAR(30), password VA
 CREATE TABLE user_role_management(rid SERIAL, uid INT , ADMIN_ID INT, ROLE VARCHAR(10),FOREIGN KEY (UID) REFERENCES user_details (uid), FOREIGN KEY (admin_id) REFERENCES user_details (uid), primary key (rid, uid));
 
 INSERT INTO user_details (name, password, email) values ('admin',  'admin', 'admin@mail.com');
+insert into user_role_management values (1, 1, 1, 'admin');
 
 CREATE TABLE device (
 	device_id VARCHAR(20), 
