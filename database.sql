@@ -46,10 +46,13 @@ CREATE TABLE DEVICE_PARAMS(
 
 
 -- Sample data insert command for device_values relation
-INSERT INTO 
-	device_values(mac_address, timestamp, count) 
-	VALUES('B0:B2:1C:42:BC:9C', NOW(), 5)
-;
+INSERT INTO device_values (mac_address, timestamp, count) VALUES
+('B0:B2:1C:42:BC:9C', '2024-01-13 17:20:58', 2),
+('B0:B2:1C:42:BC:9C', '2024-01-13 17:20:59', 3),
+('B0:B2:1C:42:BC:9C', '2024-01-14 20:20:59', 4),
+('B0:B2:1C:42:BC:9C', '2024-01-15 20:30:02.180075', 5),
+('B0:B2:1C:42:BC:9C', '2024-01-17 20:20:59', 6);
+
 
 -- Sample data insert command for device_params relation
 INSERT INTO 
