@@ -97,7 +97,7 @@ app.post("/api/add-tenant-user", async (req, res) => {
 
 app.post("/api/add-device", async(req, res)=>{
     try {
-        const { device_id, lat, longi, name, uid, min_value, max_value } = req.body;  
+        const { device_id, lat, longi, name, uid, min_value=0, max_value=0 } = req.body;  
         const result = await pool.query("SELECT device_id FROM device WHERE device_id=($1)", [device_id])
         if (result.rowCount == 0) {
 
@@ -165,6 +165,44 @@ app.get("/api/get-devices", async(req, res)=>{
         return res.status(500).json({error: err.message});
     }
 })
+
+app.get("/api/device-max", async(req, res)=>{
+    try {
+        const device_id = decodeURIComponent(req.header("device_id"));
+        const max_value = await pool.query("SELECT MAX_VALUE FROM DEVICE_PARAMS WHERE mac_address = $1;", [device_id]);
+
+        console.log(max_value);
+        // Check if any rows were returned
+        if (max_value.rowCount > 0) {
+            return res.status(200).json({ max_value: max_value.rows[0].max_value });
+        } else {
+            return res.status(404).json({ error: "No device values found" });
+        }
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+})
+
+
+app.put("/api/device-max", async(req, res)=>{
+    try {
+        const device_id = decodeURIComponent(req.header("device_id"));
+        const new_max = decodeURIComponent(req.header("max_value"));
+        const max_value = await pool.query("SELECT MAX_VALUE FROM DEVICE_PARAMS WHERE mac_address = $1;", [device_id]);
+
+        // Check if any rows were returned
+        if (max_value.rowCount > 0) {
+            await pool.query("UPDATE DEVICE_PARAMS SET MAX_VALUE=$1 where mac_address=$2", [new_max, device_id])
+            return res.status(200).json({ result: true });
+        } else {
+            return res.status(404).json({ error: "No device values found" });
+        }
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+})
+
+
 
 
 // get total value
