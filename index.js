@@ -228,9 +228,8 @@ app.get("/api/get-sensor-value", async (req, res) => {
 app.get("/api/current-day-sensor-value", async (req, res) => {
     try {
         const device_id = decodeURIComponent(req.header("device_id"));
-        const previous_day_value = await pool.query("SELECT count FROM DEVICE_VALUES WHERE mac_address = $1 AND timestamp >= current_date - interval '2 day' AND timestamp < current_date ORDER BY id DESC LIMIT 1;", [device_id]);
+        const previous_day_value = await pool.query("SELECT count FROM DEVICE_VALUES WHERE mac_address = $1 AND timestamp >= current_date - interval '1 day' AND timestamp < current_date ORDER BY id DESC LIMIT 1;", [device_id]);
 
-        console.log(previous_day_value.rows[0]);
         
         // Check if any rows were returned
         if (previous_day_value.rows.length > 0) {
@@ -243,6 +242,15 @@ app.get("/api/current-day-sensor-value", async (req, res) => {
             // return current day's value
             return res.status(200).json({currentDayValue: currentValue});
         } else {
+            const result = await pool.query("SELECT * from device where device_id = $1", [device_id]);
+            if(result.rowCount > 0){
+                const total_value = await pool.query("SELECT count FROM DEVICE_VALUES WHERE mac_address = $1 ORDER BY id DESC LIMIT 1;", [device_id]);
+                if(total_value.rowCount > 0){
+                    return res.status(200).json({currentDayValue: total_value.rows[0].count});
+                } else {
+                    return res.status(200).json({currentDayValue: 0});
+                }
+            }
             return res.status(404).json({ error: "No device values found" });
         }
     } catch (err) {
