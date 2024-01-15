@@ -34,3 +34,25 @@ CREATE TABLE DEVICE_VALUES (
   count INTEGER NOT NULL,
   FOREIGN KEY (mac_address) REFERENCES DEVICE (device_id)
 );
+
+
+
+CREATE TABLE DEVICE_PARAMS(
+  mac_address VARCHAR(17) NOT NULL,
+  MIN_VALUE INT,
+  MAX_VALUE INT,
+  FOREIGN KEY (mac_address) REFERENCES DEVICE (device_id)	 
+);
+
+
+-- Sample data insert command for device_values relation
+INSERT INTO 
+	device_values(mac_address, timestamp, count) 
+	VALUES('B0:B2:1C:42:BC:9C', NOW(), 5)
+;
+
+-- Sample data insert command for device_params relation
+INSERT INTO 
+	DEVICE_PARAMS(mac_address, MIN, MAX) 
+	VALUES('B0:B2:1C:42:BC:9C', 0, 1000)
+;
