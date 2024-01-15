@@ -97,7 +97,7 @@ app.post("/api/add-tenant-user", async (req, res) => {
 
 app.post("/api/add-device", async(req, res)=>{
     try {
-        const { device_id, lat, longi, name, uid } = req.body;  
+        const { device_id, lat, longi, name, uid, min_value, max_value } = req.body;  
         const result = await pool.query("SELECT device_id FROM device WHERE device_id=($1)", [device_id])
         if (result.rowCount == 0) {
 
@@ -107,6 +107,8 @@ app.post("/api/add-device", async(req, res)=>{
                 //     Insert Statement Device parameters 
                 await pool.query("INSERT INTO device(device_id, LOGITUDE,LATITUDE,name) VALUES ($1, $2, $3, $4)", [device_id, lat, longi, name]);
                 await pool.query("INSERT INTO device_management(uid, device_id, access) VALUES ($1, $2, $3)", [uid, device_id, 'true'])
+                await pool.query("INSERT INTO DEVICE_PARAMS(mac_address, MIN, MAX) VALUES($1, $2, $3);", [device_id, min_value, max_value])
+
                 return res.status(200).json({ result: "Success" });
             } else {
                 return res.status(300).json({ invalidUserId: "UserID not Present...Record Not Inserted" });
@@ -181,6 +183,32 @@ app.get("/api/get-sensor-value", async (req, res) => {
     }
 });
 
+
+// get current day's sensor value
+app.get("/api/current-day-sensor-value", async (req, res) => {
+    try {
+        const device_id = decodeURIComponent(req.header("device_id"));
+        const previous_day_value = await pool.query("SELECT count FROM DEVICE_VALUES WHERE mac_address = $1 AND timestamp >= current_date - interval '2 day' AND timestamp < current_date ORDER BY id DESC LIMIT 1;", [device_id]);
+
+        console.log(previous_day_value.rows[0]);
+        
+        // Check if any rows were returned
+        if (previous_day_value.rows.length > 0) {
+            const total_value = await pool.query("SELECT count FROM DEVICE_VALUES WHERE mac_address = $1 ORDER BY id DESC LIMIT 1;", [device_id]);
+            
+            const prev_value = previous_day_value.rows[0].count;
+            const total_count_value = total_value.rows[0].count;
+            const currentValue = total_count_value - prev_value;
+
+            // return current day's value
+            return res.status(200).json({currentDayValue: currentValue});
+        } else {
+            return res.status(404).json({ error: "No device values found" });
+        }
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
 
 // Not required for now
 app.get("/api/get-tenant-user", async(req, res) => {
