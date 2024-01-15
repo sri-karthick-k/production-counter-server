@@ -53,6 +53,6 @@ INSERT INTO
 
 -- Sample data insert command for device_params relation
 INSERT INTO 
-	DEVICE_PARAMS(mac_address, MIN, MAX) 
+	DEVICE_PARAMS(mac_address, MIN_VALUE, MAX_VALUE) 
 	VALUES('B0:B2:1C:42:BC:9C', 0, 1000)
 ;

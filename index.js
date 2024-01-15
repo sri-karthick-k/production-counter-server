@@ -107,7 +107,7 @@ app.post("/api/add-device", async(req, res)=>{
                 //     Insert Statement Device parameters 
                 await pool.query("INSERT INTO device(device_id, LOGITUDE,LATITUDE,name) VALUES ($1, $2, $3, $4)", [device_id, lat, longi, name]);
                 await pool.query("INSERT INTO device_management(uid, device_id, access) VALUES ($1, $2, $3)", [uid, device_id, 'true'])
-                await pool.query("INSERT INTO DEVICE_PARAMS(mac_address, MIN, MAX) VALUES($1, $2, $3);", [device_id, min_value, max_value])
+                await pool.query("INSERT INTO DEVICE_PARAMS(mac_address, MIN_VALUE, MAX_VALUE) VALUES($1, $2, $3);", [device_id, min_value, max_value])
 
                 return res.status(200).json({ result: "Success" });
             } else {
@@ -166,6 +166,8 @@ app.get("/api/get-devices", async(req, res)=>{
     }
 })
 
+
+// get total value
 app.get("/api/get-sensor-value", async (req, res) => {
     try {
         const device_id = decodeURIComponent(req.header("device_id"));
