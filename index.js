@@ -51,7 +51,7 @@ app.post("/api/login", async (req, res) => {
 })
 
 app.get('/api/authenticate', authenticateJWT, (req, res) => {
-    res.status(200).json({ message: 'Valid User 👍' });
+    res.status(200).json({ message: true });
 });
 
 app.post("/api/add-tenant-user", async (req, res) => {
