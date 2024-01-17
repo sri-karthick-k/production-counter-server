@@ -56,7 +56,7 @@ app.get('/api/authenticate', authenticateJWT, (req, res) => {
 
 app.post("/api/add-tenant-user", async (req, res) => {
     try {
-        const { name, email, password, address, company, mobile, adminid, role = "user" } = req.body;
+        const { name, email, password, address, company, mobile, adminid, role } = req.body;
         // Should add company, date_of_register
         const result = await pool.query("SELECT name FROM user_details WHERE email=($1)", [email])
         const userQuery = "select role from user_role_management where uid=($1)"
