@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken')
 
 const secretKey = process.env.AUTH_KEY;
 
-let port = "4000";
+let port = "4001";
 
 app.use(cors())
 app.use(express.json())
