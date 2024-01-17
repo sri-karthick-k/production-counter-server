@@ -298,6 +298,27 @@ app.get("/api/device-report", async(req, res) => {
     }
 })
 
+// Only for ESP32 to initialize the count value
+app.get("/api/previous-value", async(req, res) => {
+    try {
+        const device_id = decodeURIComponent(req.header("device_id"));
+        const name = await pool.query("select name from device where device_id=$1", [device_id]);
+
+        
+        // Check if any rows were returned
+        if (name.rows.length > 0) {
+            const prev_count = await pool.query("SELECT count FROM DEVICE_VALUES WHERE mac_address = $1 ORDER BY id DESC LIMIT 1;", [device_id]);
+            
+            // return previous count value
+            return res.status(200).json(prev_count.rows[0].count);
+        } else {
+            return res.status(404).json({ error: "No devices found" });
+        } 
+    } catch (err) {
+        return res.status(404).json({"error": err.message});
+    }
+})
+
 // Not required for now
 app.get("/api/get-tenant-user", async(req, res) => {
     try {
