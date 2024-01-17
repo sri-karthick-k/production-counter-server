@@ -171,7 +171,6 @@ app.get("/api/device-max", async(req, res)=>{
         const device_id = decodeURIComponent(req.header("device_id"));
         const max_value = await pool.query("SELECT MAX_VALUE FROM DEVICE_PARAMS WHERE mac_address = $1;", [device_id]);
 
-        console.log(max_value);
         // Check if any rows were returned
         if (max_value.rowCount > 0) {
             return res.status(200).json({ max_value: max_value.rows[0].max_value });
@@ -276,6 +275,28 @@ app.get("/api/current-day-sensor-value", async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 });
+
+
+app.get("/api/device-report", async(req, res) => {
+    try {
+        const device_id = decodeURIComponent(req.header("device_id"));
+        const name = await pool.query("select name from device where device_id=$1", [device_id]);
+
+        
+        // Check if any rows were returned
+        if (name.rows.length > 0) {
+            const total_value = await pool.query("select d.device_id as mac, d.name, dv.timestamp, dv.count from device d, device_values dv where d.device_id=dv.mac_address and d.device_id=$1;", [device_id]);
+            
+            console.log(total_value)
+            // return current day's value
+            return res.status(200).json(total_value.rows);
+        } else {
+            return res.status(404).json({ error: "No devices found" });
+        } 
+    } catch (err) {
+        return res.status(404).json({"error": err.message});
+    }
+})
 
 // Not required for now
 app.get("/api/get-tenant-user", async(req, res) => {
