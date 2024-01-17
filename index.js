@@ -203,6 +203,25 @@ app.put("/api/device-max", async(req, res)=>{
 })
 
 
+app.put("/api/device-name", async(req, res)=>{
+    try {
+        const device_id = decodeURIComponent(req.header("device_id"));
+        const new_name = decodeURIComponent(req.header("new_name"));
+        const name = await pool.query("SELECT name FROM device WHERE device_id = $1;", [device_id]);
+
+        // Check if any rows were returned
+        if (name.rowCount > 0) {
+            await pool.query("UPDATE device SET name=$1 where device_id=$2", [new_name, device_id])
+            return res.status(200).json({ result: true });
+        } else {
+            return res.status(404).json({ error: "No devices found" });
+        }
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+})
+
+
 
 
 // get total value
