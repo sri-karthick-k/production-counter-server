@@ -342,12 +342,19 @@ app.get("/api/get-tenant-user", async(req, res) => {
     }
 })
 
-// Not required for now
 app.get("/api/get-user", async(req, res) => {
     try {
-        const uid = req.header("uid")
-        const user = await pool.query("select * from user_details where uid in (select uid from user_role_management where role='user' and admin_id=$1);", [uid])
-        return res.status(200).json(user.rows)
+        const uid = req.header("user_id")
+
+        const isAdmin = await pool.query("select role from user_role_management where uid = $1", [uid])
+        if(isAdmin.rows[0].role !== 'admin'){
+            const user = await pool.query("select * from user_details where uid in (select uid from user_role_management where role='user' and admin_id=$1);", [uid])
+            return res.status(200).json(user.rows)
+        } else {
+            const user = await pool.query("select * from user_details where uid in (select uid from user_role_management where role != 'admin');")
+            return res.status(200).json(user.rows)
+        }
+            
     } catch (err) {
         return res.status(500).json({error: err.message})
     }
@@ -361,9 +368,6 @@ app.get("/api/device-manager", async(req, res) => {
         
         // Check if any rows were returned
         if (name.rows.length > 0) {
-            console.log(name)
-            
-            // return previous count value
             return res.status(200)
             .json(name.rows[0].name);
         } else {
