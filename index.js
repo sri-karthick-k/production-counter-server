@@ -378,6 +378,21 @@ app.get("/api/device-manager", async(req, res) => {
     }
 })
 
+app.delete("/api/device", async(req, res) => {
+    try {
+        const device_id = decodeURIComponent(req.header("device_id"));
+        await pool.query("delete from device_values where mac_address = $1", [device_id]);
+        await pool.query("delete from device_params where mac_address = $1", [device_id]);
+        await pool.query("delete from device_management where device_id = $1", [device_id]);
+        await pool.query("delete from device where device_id = $1", [device_id]);
+
+        return res.status(200).json({ msg: "Success" })
+
+    } catch (err){
+        return res.status(500).json({error: err.message})
+    }
+})
+
 app.listen(port, () => {
     console.log(`Server running at ${port}`)
 })
